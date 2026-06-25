@@ -1,0 +1,44 @@
+name: 転送依頼メール下書き作成
+
+# シートのボタン（GAS）から手動起動する。定期実行はしない。
+on:
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: "全行を再処理（テスト用。通常はオフ）"
+        type: boolean
+        default: false
+
+jobs:
+  create-drafts:
+    # ubuntu-latest(24.04) は Playwright 依存の libasound2 が無く失敗するため 22.04 を使用
+    runs-on: ubuntu-22.04
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 依存パッケージのインストール
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: 下書き作成スクリプト実行
+        env:
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
+          RAKUTEN_PREFIXES_JSON: ${{ secrets.RAKUTEN_PREFIXES_JSON }}
+          LOGIN_ID_1: ${{ secrets.LOGIN_ID_1 }}
+          LOGIN_PASS_1: ${{ secrets.LOGIN_PASS_1 }}
+          LOGIN_ID_2: ${{ secrets.LOGIN_ID_2 }}
+          LOGIN_PASS_2: ${{ secrets.LOGIN_PASS_2 }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          STOP_SPREADSHEET_ID: ${{ secrets.STOP_SPREADSHEET_ID }}
+          RAKUTEN_DRAFT_URL: ${{ secrets.RAKUTEN_DRAFT_URL }}
+          OTHER_DRAFT_URL: ${{ secrets.OTHER_DRAFT_URL }}
+          DRAFT_SECRET: ${{ secrets.DRAFT_SECRET }}
+          FORCE_ALL: ${{ inputs.force_all }}
+        run: python stop_request.py
